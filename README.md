@@ -28,7 +28,7 @@ and splitted into training and test data along with the label vector `y`.
 
 I followed class instructions and created several functions in `DataProcessing/preprocess.py`.  The functions are listed in the following table:
 | Function Name |  Usage |
-|:--:|:--:|
+|------|---------|
 |`convert_color()` |  convert image color space from BGR to another space |
 |`bin_spatial()` | convert image to specified size and vectorize it |
 | `color_hist()` |   histogram of pixel values in all three channels |
