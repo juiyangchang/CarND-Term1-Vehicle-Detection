@@ -60,7 +60,7 @@ random forest classifier. None of these classifiers outperform linear SVM, so he
 
 The scoring criteria I used is `roc_auc`. As was discussed on stackexchange, `roc_auc` represents [the expected proportion of positives ranked before a uniformly drawn random negative](https://stats.stackexchange.com/questions/132777/what-does-auc-stand-for-and-what-is-it). Hence maximizing `roc_auc` ensures the positive instances are more likely to be ranked above the negative instances. In retrospect, this might not be a good criterion for SVM as it may minimize the margin between positive and negative classes and make the classifier prone to overfitting.  
 
-I randomly sampled and searched over 30 parameter sets and perform three-fold cross validation over the training data `X_train` and `y_train`.  Below is the set of parameters 
+I randomly sampled and searched over 30 parameter sets and perform three-fold cross validation over the training data `X_train` and `y_train`.  Below is the best set of parameters among the 30 samples:
 ```python
 {'ext__color_space': 'YUV',
  'ext__hist_bins': 32,
@@ -70,6 +70,28 @@ I randomly sampled and searched over 30 parameter sets and perform three-fold cr
  'ext__spatial_size': (16, 16),
  'svc__C': 0.0001}
 ```
+
+With these parameters, I further searched over the following parameter grid with `GridSearchCV`:
+```python
+param_grid = {'ext__spatial_size': [(16, 16), (32, 32), (64, 64)],
+              'ext__pix_per_cell': [4, 8, 12], 'ext__cell_per_block': [1,2,3,4]}
+```
+The parameters not included in the grid were set according to the best set above.  Below is the best set of parameters:
+```python
+{'ext__cell_per_block': 1,
+ 'ext__pix_per_cell': 8,
+ 'ext__spatial_size': (16, 16)}
+ ```
+ Moving forward, I will use the following parameters:
+ `color_space='YUV'`, `spatial_size=(16, 16)`, `hist_bins=32`,HoG parameters: `orient=12`, `pix_per_cell=8`, `cell_per_block=1`, and `hog_channel='ALL'` and `C=1e-4` for the linear SVM classifier.
+
+ #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
+
+ ### Sliding Window Search
+
+#### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
+
+
 
 
 
