@@ -42,12 +42,12 @@ histogram of pixel-value, and histogram of gradient features.
 
 #### 2. Explain how you settled on your final choice of HOG parameters.
 
-I did two rounds of three-fold cross validation to search the parameters.
-Initially I used `RandomizedSearchCV` to uniformly search over the following parameter sets:
+I did three-fold cross validation to search the parameters.
+I used `RandomizedSearchCV` to uniformly search over the following parameter sets:
 ```python
-param_grid = {'ext__color_space': ['HLS', 'YUV', 'YCrCb'], 'ext__spatial_size': [(16, 16), (32, 32), (64, 64)],
-              'ext__hist_bins': [16, 32, 64], 'ext__orient': [9, 12, 15], 'ext__pix_per_cell': [4, 8, 12], 
-              'ext__hog_channel': [0, 1, 2, 'ALL'],               
+param_grid = {'ext__color_space': ['HLS', 'YUV', 'YCrCb'], 'ext__spatial_size': [(24, 24), (32, 32), (40, 40)],
+              'ext__hist_bins': [16, 32, 48], 'ext__orient': [6, 9, 12], 'ext__pix_per_cell': [6, 8, 10], 
+              'ext__hog_channel': [0, 1, 2, 'ALL'], 'ext__cell_per_block': [2, 3],
               'svc__C': np.logspace(-4, 4, 9)}
 ```
 `ext` here represents an instance of the `Extract` class
@@ -55,43 +55,65 @@ I defined in `DataProcessing/preprocess.py`. `svc` is an instance of `LinearSVC`
 As is indicated in the documentation of scikit learn, 
 `LinearSVC` is an more efficient implementation of support vector machine (SVM) classifier with linear kernel.  In the initial search, the `cell_per_block`
 
-In my initial trial, I did cross validation using SVM with radial basis function (RBF) kernel and 
+In my other experimental trials, I did cross validation using SVM with radial basis function (RBF) kernel and 
 random forest classifier. None of these classifiers outperform linear SVM, so here I am only using linear SVM.
 
-The scoring criteria I used is `roc_auc`. As was discussed on stackexchange, `roc_auc` represents [the expected proportion of positives ranked before a uniformly drawn random negative](https://stats.stackexchange.com/questions/132777/what-does-auc-stand-for-and-what-is-it). Hence maximizing `roc_auc` ensures the positive instances are more likely to be ranked above the negative instances. In retrospect, this might not be a good criterion for SVM as it may minimize the margin between positive and negative classes and make the classifier prone to overfitting.  
+The scoring criteria I used is `accuracy`. I also tried using `f1` and `roc_auc`.  From my eye ball inspection,
+the former seems to be a more conservative approach, while `roc_auc` might be prone to overfitting.  I think `accuracy`
+strikes a balance in this particular case.
 
 I randomly sampled and searched over 30 parameter sets and perform three-fold cross validation over the training data `X_train` and `y_train`.  Below is the best set of parameters among the 30 samples:
 ```python
-{'ext__color_space': 'YUV',
- 'ext__hist_bins': 32,
+{'ext__cell_per_block': 2,
+ 'ext__color_space': 'YUV',
+ 'ext__hist_bins': 48,
  'ext__hog_channel': 'ALL',
- 'ext__orient': 12,
+ 'ext__orient': 9,
  'ext__pix_per_cell': 8,
- 'ext__spatial_size': (16, 16),
- 'svc__C': 0.0001}
+ 'ext__spatial_size': (24, 24),
+ 'svc__C': 100.0}
 ```
-
-With these parameters, I further searched over the following parameter grid with `GridSearchCV`:
-```python
-param_grid = {'ext__spatial_size': [(16, 16), (32, 32), (64, 64)],
-              'ext__pix_per_cell': [4, 8, 12], 'ext__cell_per_block': [1,2,3,4]}
-```
-The parameters not included in the grid were set according to the best set above.  Below is the best set of parameters:
-```python
-{'ext__cell_per_block': 1,
- 'ext__pix_per_cell': 8,
- 'ext__spatial_size': (16, 16)}
- ```
- Moving forward, I will use the following parameters:
- `color_space='YUV'`, `spatial_size=(16, 16)`, `hist_bins=32`,HoG parameters: `orient=12`, `pix_per_cell=8`, `cell_per_block=1`, and `hog_channel='ALL'` and `C=1e-4` for the linear SVM classifier.
+Moving forward, I will use the above set of parameters to train my classifer. 
 
  #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
+The model training procedure can be find in cell `[26]｀.  Basically I create a pipeline that extracts features,
+standardize the features, then fit to the features with Linear SVM classifier:
+``` python
+pipeline = Pipeline([('ext', Extract()), ('imp', Imputer()), ('scl', StandardScaler()), ('svc', LinearSVC())])
+pipeline.fit(X, y)
+```
 
  ### Sliding Window Search
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
+I followed the approach demonstrated on the section of **Hog Sub-sampling Window Search** on the class website to implement the sliding window search.  
+This approach only compute HoG for the whole slice of image for each scaling factor.
+My implementation of the scanning approach is defined in `DataProcessing/scan.py` and the main function called by the pipeline is `find_cars()` .  The actual scanning is done in the function `car_scan()` and the function 
+
+Basically I only searched cars within the (vertical) bottom half of the image.  I scanned vertical slices of the image
+with different scaling factors sequentially.  Below is the code:
+```python
+search_range = [(h//2, h//2 + slice_height) for slice_height in range(50, h//2, 50)] + [(h//2, h)]
+search_scaling = [(end - start) / 250 * 1.5 for start, end in search_range] 
+```
+I started from searching over a 50-pixel slice, then over 100-pixel slice, and so forth till `h/2`-pixel slice where
+`h` is the height of the image. As for the scaling factor, the scaling factor is proportional to the height of the slice
+and I followed the class example to set the scaling factor be 1.5 for the 250-pixel slice (in class it was 256-pixel slice).  
+
+As for the overlapping between windows, I didn't tune the overlapping size and I would step 2 cells forward right/down
+for every iteration, which is 6 overlapping cells between the windows next to each other (horizontally/vertically).
+
+#### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
 
+
+## Video Implementation
+
+#### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
+Here's a [link to my video result](./project_video.mp4)
+
+
+#### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 
 
 
