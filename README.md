@@ -12,6 +12,9 @@ The goals / steps of this project are the following:
 * Run your pipeline on a video stream (start with the test_video.mp4 and later implement on full project_video.mp4) and create a heat map of recurring detections frame by frame to reject outliers and follow detected vehicles.
 * Estimate a bounding box for vehicles detected.
 
+[//]: # (Image References)
+[image1]: ./output_images/sliding_window_search.png  "Sliding Window Search Result"
+
 ## Rubric Points
  Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/513/viewindividually) and describe how I addressed each point in my implementation.  
 
@@ -33,7 +36,7 @@ I followed class instructions and created several functions in `DataProcessing/p
 |`convert_color()` |  convert image color space from BGR to another space |
 |`bin_spatial()` | convert image to specified size and vectorize it |
 | `color_hist()` |  a vector of histogram counts of pixel values in all three channels |
-| `get_hog_features()` | histogram of gradient (HoG) features   |
+| `get_hog_features()` | histogram of gradient (HOG) features   |
 | `extract_features()` | load images from a list of file paths, call all four functions above and return a matrix of features where rows are image files and columns are features  |
 | class `Extract`  |  A class inherited from  `BaseEstimator` and `TransformerMixin`.  It transforms list/array of images to matrix of features |
 
@@ -86,7 +89,7 @@ pipeline.fit(X, y)
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
 I followed the approach demonstrated in the section of **Hog Sub-sampling Window Search** on the class website to implement the sliding window searching procedure.
-This approach only compute HoG for the whole slice of image for each scaling factor.
+This approach only compute HOG for the whole slice of image for each scaling factor.
 My implementation of the scanning approach is defined in `DataProcessing/scan.py` and the main function called by the pipeline is `find_cars()`. The actual scanning is done in the function `car_scan()` and the function `draw_create_boxes()`
 draws and creates the bounding boxes for detected regions.
 
@@ -104,6 +107,9 @@ As for the overlapping between windows, I didn't tune the overlapping size and I
 for every iteration, which is 6 overlapping cells between the windows next to each other (horizontally/vertically).
 
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
+
+![][image1]
+
 
 
 
