@@ -26,14 +26,14 @@ You're reading it!
 I started by loading the the labeled data for vehicle and non-vehicle examples provided on the class instructions in cells `[3]` through `[5]` of the [Ipython notebook](). These images are collected into a numpy array `X` and 
 and splitted into training and test data along with the label vector `y`.
 
-I followed class instructions and created several functions in `DataProcessing/preprocess.py`.  The functions are listed in the following table:
+I followed class instructions and created several functions in `DataProcessing/preprocess.py`.  The function names and their usage are listed in the following table:
 
 | Function Name |  Usage |
 |-------------|-------------|
 |`convert_color()` |  convert image color space from BGR to another space |
 |`bin_spatial()` | convert image to specified size and vectorize it |
-| `color_hist()` |   histogram of pixel values in all three channels |
-| `get_hog_features()` | histogram of gradient features   |
+| `color_hist()` |  a vector of histogram counts of pixel values in all three channels |
+| `get_hog_features()` | histogram of gradient (HoG) features   |
 | `extract_features()` | load images from a list of file paths, call all four functions above and return a matrix of features where rows are image files and columns are features  |
 | class `Extract`  |  A class inherited from  `BaseEstimator` and `TransformerMixin`.  It transforms list/array of images to matrix of features |
 
@@ -53,8 +53,7 @@ param_grid = {'ext__color_space': ['HLS', 'YUV', 'YCrCb'], 'ext__spatial_size': 
 `ext` here represents an instance of the `Extract` class
 I defined in `DataProcessing/preprocess.py`. `svc` is an instance of `LinearSVC`, imported from `sklearn.svm`.
 As is indicated in the documentation of scikit learn, 
-`LinearSVC` is an more efficient implementation of support vector machine (SVM) classifier with linear kernel.  In the initial search, the `cell_per_block`
-
+`LinearSVC` is a more efficient implementation of support vector machine (SVM) classifier with linear kernel. 
 In my other experimental trials, I did cross validation using SVM with radial basis function (RBF) kernel and 
 random forest classifier. None of these classifiers outperform linear SVM, so here I am only using linear SVM.
 
@@ -73,11 +72,11 @@ I randomly sampled and searched over 30 parameter sets and perform three-fold cr
  'ext__spatial_size': (24, 24),
  'svc__C': 100.0}
 ```
-Moving forward, I will use the above set of parameters to train my classifer. 
+Moving forward, I will use the above set of parameters to train my classifier. 
 
  #### 3. Describe how (and identify where in your code) you trained a classifier using your selected HOG features (and color features if you used them).
 The model training procedure can be find in cell `[26]｀.  Basically I create a pipeline that extracts features,
-standardize the features, then fit to the features with Linear SVM classifier:
+standardize the features, then fit a Linear SVM classifier to the features:
 ``` python
 pipeline = Pipeline([('ext', Extract()), ('imp', Imputer()), ('scl', StandardScaler()), ('svc', LinearSVC())])
 pipeline.fit(X, y)
@@ -86,12 +85,13 @@ pipeline.fit(X, y)
  ### Sliding Window Search
 
 #### 1. Describe how (and identify where in your code) you implemented a sliding window search.  How did you decide what scales to search and how much to overlap windows?
-I followed the approach demonstrated on the section of **Hog Sub-sampling Window Search** on the class website to implement the sliding window search.  
+I followed the approach demonstrated in the section of **Hog Sub-sampling Window Search** on the class website to implement the sliding window searching procedure.
 This approach only compute HoG for the whole slice of image for each scaling factor.
-My implementation of the scanning approach is defined in `DataProcessing/scan.py` and the main function called by the pipeline is `find_cars()` .  The actual scanning is done in the function `car_scan()` and the function 
+My implementation of the scanning approach is defined in `DataProcessing/scan.py` and the main function called by the pipeline is `find_cars()`. The actual scanning is done in the function `car_scan()` and the function `draw_create_boxes()`
+draws and creates the bounding boxes for detected regions.
 
 Basically I only searched cars within the (vertical) bottom half of the image.  I scanned vertical slices of the image
-with different scaling factors sequentially.  Below is the code:
+with different scaling factors sequentially.  Below is the code for the search slices and their scaling factors:
 ```python
 search_range = [(h//2, h//2 + slice_height) for slice_height in range(50, h//2, 50)] + [(h//2, h)]
 search_scaling = [(end - start) / 250 * 1.5 for start, end in search_range] 
