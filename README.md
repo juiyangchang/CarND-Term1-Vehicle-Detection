@@ -116,8 +116,9 @@ Below is the result of sliding window searching result over `test1.jpg`.
 Below is the result of the pipeline over the six test images.
 ![][image1]
 I did several experiment to tune the classifier. First of all, as mentioned before, I tried tuning the feature extraction approach and SVM parameter with cross validation and different scoring criterion such as accuracy, roc_auc and f1.  I found accuracy seem to be a more suitable criteria then the rest two.  I also tuned the range of slice heights and
-the threshold of heat map. But it is more of trial and error in both of these cases.  It seems that a threshold of 1
-for the heat map is more robust.
+the threshold of heat map. But it is more of trial and error in both of these cases.  It seems that a threshold of 2
+for the heatmap is more robust. This threshold means that a pixel will only be included in the final bounding box
+if it lies in three or more scanning-detected bounding box.
 
 
 ## Video Implementation
@@ -133,7 +134,7 @@ you can also find it in this [repo](output_videos/project_video.mp4).
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
 The procedures for rejecting false positives are implemented　in `DataProcessing/pipeline.py`.  The basic idea follows
 the class instructions, first a heatmap is created by counting the number of times individual pixels are found in
-the bounding boxes found by the scanning approach. This followed by thresholding the heatmap at 1
+the bounding boxes found by the scanning approach. This followed by thresholding the heatmap at 2
 and using `label()` imported from `scipy.ndimage.measurements` to find connected regions. These regions are drawn with
 `draw_labeled_bboxes()`, here I also discard bounding boxes that are too small (diagonal distance < 50 pixels), 
 as they are likely to be distant cars (which are less interesting) or false positives.
@@ -141,10 +142,10 @@ as they are likely to be distant cars (which are less interesting) or false posi
 Below is a demonstration of the pipeline of forming heatmap, thresholding and forming connected regions and drawing final boxes:
 ![][image3]
 
-During video processing I also smooth the thresholded image by forming a weighted average of past thresholded images
+During video processing I also smooth the heatmap by forming a weighted average of past heatmaps
 and present one:
 ```python
-thresholded = alpha*thresholded + sum((1-alpha)**(l-1-i) * alpha**(i>0) * pipeline.hist_thresholded[i] for i in range(l-1))
+heatmap = alpha*heatmap+ sum((1-alpha)**(l-1-i) * alpha**(i>0) * pipeline.hist[i] for i in range(l-1))
 ```
 where `alpha = 0.5`.
 
@@ -154,6 +155,17 @@ where `alpha = 0.5`.
 ### Discussion
 
 #### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+
+There are situations that my pipeline will detect trees as cars.  It seems to be a result of color and HOG being similar
+to car at times.  Another case is that when the car is on the very horizontal boundary of the scene and only part of it
+is seen. It seems that some kind of time series prediction procedure for tracking the boundary points of the bounding boxes may help.  Even some kind of extrapolation might help.  Also, when two cars are kind of next to each other in the
+video clip, it can be difficult to separate them.  Finally, my procedure is by far not real time.
+
+I think it might be helpful to use intersection over union to smooth bounding boxes across video frames.
+With this, we could potentially group bounding boxes that belong to the same car and maybe interpolate or remove
+misdetections.  Another useful procedure is maybe use some kind of tracking procedure to track the boundary point.
+Finally, it might be more efficient to use modern procedures that utilize deep learning, such as YOLO (you only look once).
+
 
 
 

@@ -52,17 +52,17 @@ def pipeline(img):
     heatmap = np.zeros_like(img[:,:,0]).astype(np.float)
     heatmap = add_heat(heatmap, box_list)
 
-    thresholded = apply_threshold(heatmap, 1)
-    if hasattr(pipeline, 'hist_thresholded'):
-        pipeline.hist_thresholded.append(thresholded)
-        if len(pipeline.hist_thresholded) > 5:
-            pipeline.hist_thresholded.popleft()
+    if hasattr(pipeline, 'hist'):
+        pipeline.hist.append(heatmap)
+        if len(pipeline.hist) > 5:
+            pipeline.hist.popleft()
 
-        l = len(pipeline.hist_thresholded)
-        thresholded = alpha*thresholded + sum((1-alpha)**(l-1-i) * alpha**(i>0) * pipeline.hist_thresholded[i] for i in range(l-1))
-    else:
-        pipeline.hist_thresholded = deque([thresholded])
+        l = len(pipeline.hist)
+        heatmap = alpha*heatmap + sum((1-alpha)**(l-1-i) * alpha**(i>0) * pipeline.hist[i] for i in range(l-1))
+    else: 
+        pipeline.hist = deque([heatmap])
     
+    thresholded = apply_threshold(heatmap, 2)
     labels = label(thresholded)
     #print(labels[1], 'cars found')
     #plt.imshow(labels[0], cmap='gray')
