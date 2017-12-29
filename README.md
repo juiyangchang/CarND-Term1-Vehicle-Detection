@@ -13,7 +13,9 @@ The goals / steps of this project are the following:
 * Estimate a bounding box for vehicles detected.
 
 [//]: # (Image References)
-[image1]: ./output_images/sliding_window_search.png  "Sliding Window Search Result"
+[image1]: ./output_images/pipeline_test_images.png  "Pipeline over Test Images"
+[image2]: ./output_images/sliding_window_search_test1.png "Sliding window searching result over test1.jpg"
+[image3]: ./output_images/false_positive_rejection.png "False Positive Rejection with Thresholded Heatmap"
 
 ## Rubric Points
  Here I will consider the [rubric points](https://review.udacity.com/#!/rubrics/513/viewindividually) and describe how I addressed each point in my implementation.  
@@ -106,20 +108,53 @@ and I followed the class example to set the scaling factor be 1.5 for the 250-pi
 As for the overlapping between windows, I didn't tune the overlapping size and I would step 2 cells forward right/down
 for every iteration, which is 6 overlapping cells between the windows next to each other (horizontally/vertically).
 
+Below is the result of sliding window searching result over `test1.jpg`.
+![][image2]
+
 #### 2. Show some examples of test images to demonstrate how your pipeline is working.  What did you do to optimize the performance of your classifier?
 
+Below is the result of the pipeline over the six test images.
 ![][image1]
-
-
+I did several experiment to tune the classifier. First of all, as mentioned before, I tried tuning the feature extraction approach and SVM parameter with cross validation and different scoring criterion such as accuracy, roc_auc and f1.  I found accuracy seem to be a more suitable criteria then the rest two.  I also tuned the range of slice heights and
+the threshold of heat map. But it is more of trial and error in both of these cases.  It seems that a threshold of 1
+for the heat map is more robust.
 
 
 ## Video Implementation
 
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
-Here's a [link to my video result](./project_video.mp4)
+Below is a link to my project video results:
+
+[![Project Video](http://img.youtube.com/vi/XVc_37_59VM/0.jpg)](https://youtu.be/XVc_37_59VM "Project Video")
+
+you can also find it in this [repo](output_videos/project_video.mp4).
 
 
 #### 2. Describe how (and identify where in your code) you implemented some kind of filter for false positives and some method for combining overlapping bounding boxes.
+The procedures for rejecting false positives are implemented　in `DataProcessing/pipeline.py`.  The basic idea follows
+the class instructions, first a heatmap is created by counting the number of times individual pixels are found in
+the bounding boxes found by the scanning approach. This followed by thresholding the heatmap at 1
+and using `label()` imported from `scipy.ndimage.measurements` to find connected regions. These regions are drawn with
+`draw_labeled_bboxes()`, here I also discard bounding boxes that are too small (diagonal distance < 50 pixels), 
+as they are likely to be distant cars (which are less interesting) or false positives.
+
+Below is a demonstration of the pipeline of forming heatmap, thresholding and forming connected regions and drawing final boxes:
+![][image3]
+
+During video processing I also smooth the thresholded image by forming a weighted average of past thresholded images
+and present one:
+```python
+thresholded = alpha*thresholded + sum((1-alpha)**(l-1-i) * alpha**(i>0) * pipeline.hist_thresholded[i] for i in range(l-1))
+```
+where `alpha = 0.5`.
+
+
+---
+
+### Discussion
+
+#### 1. Briefly discuss any problems / issues you faced in your implementation of this project.  Where will your pipeline likely fail?  What could you do to make it more robust?
+
 
 
 

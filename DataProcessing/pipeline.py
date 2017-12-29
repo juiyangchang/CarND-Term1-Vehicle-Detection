@@ -3,6 +3,7 @@ import cv2
 from scipy.ndimage.measurements import label
 import pickle
 import DataProcessing.scan as scan
+from collections import deque
 
 data = pickle.load(open('data.p', 'rb'))
 X = data['X']
@@ -20,9 +21,10 @@ def add_heat(heatmap, bbox_list):
 
 def apply_threshold(heatmap, threshold):
     # Zero out pixels below the threshold
-    heatmap[heatmap <= threshold] = 0
+    thresholded = np.copy(heatmap)
+    thresholded[thresholded <= threshold] = 0
     # Return thresholded map
-    return heatmap
+    return thresholded
 
 def draw_labeled_bboxes(img, labels):
     # Iterate through all detected cars
@@ -36,23 +38,35 @@ def draw_labeled_bboxes(img, labels):
         # Define a bounding box based on min/max x and y
         bbox = ((np.min(nonzerox), np.min(nonzeroy)), (np.max(nonzerox), np.max(nonzeroy)))
         # Draw the box on the image
-        cv2.rectangle(draw_img, bbox[0], bbox[1], (0,0,255), 6)
+        if np.sqrt((bbox[1][0] - bbox[0][0])**2 + (bbox[1][1] - bbox[0][1])**2) > 50:
+            cv2.rectangle(draw_img, bbox[0], bbox[1], (0,0,255), 6)
     # Return the image
     return draw_img
 
 def pipeline(img):
+    alpha = 0.5
     img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
     
     _, box_list = scan.find_cars(img, X, y, 'YUV', C=100)
     
     heatmap = np.zeros_like(img[:,:,0]).astype(np.float)
     heatmap = add_heat(heatmap, box_list)
-    
+
     thresholded = apply_threshold(heatmap, 1)
+    if hasattr(pipeline, 'hist_thresholded'):
+        pipeline.hist_thresholded.append(thresholded)
+        if len(pipeline.hist_thresholded) > 5:
+            pipeline.hist_thresholded.popleft()
+
+        l = len(pipeline.hist_thresholded)
+        thresholded = alpha*thresholded + sum((1-alpha)**(l-1-i) * alpha**(i>0) * pipeline.hist_thresholded[i] for i in range(l-1))
+    else:
+        pipeline.hist_thresholded = deque([thresholded])
     
     labels = label(thresholded)
     #print(labels[1], 'cars found')
     #plt.imshow(labels[0], cmap='gray')
     
     result = draw_labeled_bboxes(cv2.cvtColor(img, cv2.COLOR_BGR2RGB), labels)
+    result = cv2.resize(result,None,fx=0.66, fy=0.66, interpolation = cv2.INTER_AREA)
     return result

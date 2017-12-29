@@ -115,7 +115,7 @@ def find_cars(img, X, y, color='RGB', C=1e-4):
         
     h, w = img.shape[:2]
     #search_range = [(400, 656)] 
-    search_range = [(h//2, h//2 + rng_size) for rng_size in range(50, h//2, 100)] + [(h//2, h)]
+    search_range = [(h//2, h//2 + rng_size) for rng_size in range(50, h//2, 50)] + [(h//2, h)]
     #search_scaling = [1.5] 
     search_scaling = [(end - start) / 250 * 1.5 for start, end in search_range] 
     
