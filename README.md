@@ -126,7 +126,7 @@ if it lies in three or more scanning-detected bounding box.
 #### 1. Provide a link to your final video output.  Your pipeline should perform reasonably well on the entire project video (somewhat wobbly or unstable bounding boxes are ok as long as you are identifying the vehicles most of the time with minimal false positives.)
 Below is a link to my project video results:
 
-[![Project Video](http://img.youtube.com/vi/XVc_37_59VM/0.jpg)](https://youtu.be/XVc_37_59VM "Project Video")
+[![Project Video](http://img.youtube.com/vi/1E-Xtn-5sWM/0.jpg)](https://youtu.be/1E-Xtn-5sWM "Project Video")
 
 you can also find it in this [repo](output_videos/project_video.mp4).
 
