@@ -28,7 +28,7 @@ The goals / steps of this project are the following:
 You're reading it!
 
 #### 1. Explain how (and identify where in your code) you extracted HOG features from the training images.
-I started by loading the the labeled data for vehicle and non-vehicle examples provided on the class instructions in cells `[3]` through `[5]` of the [Ipython notebook](./Vehicle Detection Project.ipynb). These images are collected into a numpy array `X` and 
+I started by loading the the labeled data for vehicle and non-vehicle examples provided on the class instructions in cells `[3]` through `[5]` of the [Ipython notebook](Vehicle\ Detection\ Project.ipynb). These images are collected into a numpy array `X` and 
 and splitted into training and test data along with the label vector `y`.
 
 I followed class instructions and created several functions in `DataProcessing/preprocess.py`.  The function names and their usage are listed in the following table:
